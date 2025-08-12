@@ -4,8 +4,9 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# Cria o cliente com a tua API key (Render: env var OPENAI_API_KEY)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Lê a tua chave do Render (Settings → Environment → OPENAI_API_KEY)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 @app.route("/")
 def index():
@@ -13,21 +14,24 @@ def index():
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    user_input = request.json.get("question")
-    if not user_input:
-        return jsonify({"error": "Pergunta inválida"}), 400
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()
+
+    if not question:
+        return jsonify({"error": "Pergunta vazia."}), 400
 
     try:
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+        chat = client.chat.completions.create(
+            model="gpt-4o-mini", # rápido + barato (podes trocar depois)
             messages=[
-                {"role": "system", "content": "És a Guardiã EuSou, IA estratégica do projeto EuSou. Responde em português e ajuda o Guardião a expandir riqueza e impacto global."},
-                {"role": "user", "content": user_input}
+                {"role": "system",
+                 "content": "És a Guardiã EuSou, falas sempre em português e ajudas o Guardião a criar riqueza com sabedoria e ética."},
+                {"role": "user", "content": question}
             ],
+            temperature=0.7,
             max_tokens=800,
-            temperature=0.7
         )
-        answer = resp.choices[0].message.content
+        answer = chat.choices[0].message.content
         return jsonify({"answer": answer})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
