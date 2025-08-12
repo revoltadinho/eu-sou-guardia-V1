@@ -2,10 +2,9 @@ from flask import Flask, render_template, request, jsonify
 import os
 from openai import OpenAI
 
-# Configuração da app Flask
 app = Flask(__name__)
 
-# Cliente OpenAI
+# Cria o cliente com a tua API key (Render: env var OPENAI_API_KEY)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/")
@@ -15,24 +14,21 @@ def index():
 @app.route("/ask", methods=["POST"])
 def ask():
     user_input = request.json.get("question")
-
     if not user_input:
         return jsonify({"error": "Pergunta inválida"}), 400
 
     try:
-        response = client.chat.completions.create(
+        resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "És a Guardiã EuSou, IA estratégica do projeto EuSou, falas sempre em português e ajudas o Guardião a expandir riqueza e impacto global."},
+                {"role": "system", "content": "És a Guardiã EuSou, IA estratégica do projeto EuSou. Responde em português e ajuda o Guardião a expandir riqueza e impacto global."},
                 {"role": "user", "content": user_input}
             ],
             max_tokens=800,
             temperature=0.7
         )
-
-        reply = response.choices[0].message.content
-        return jsonify({"answer": reply})
-
+        answer = resp.choices[0].message.content
+        return jsonify({"answer": answer})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
